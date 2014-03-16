@@ -13,6 +13,9 @@ BuildRequires: glib2-devel
 BuildRequires: libsoup-devel
 BuildRequires: libxml2-devel
 BuildRequires: pkgconfig
+BuildRequires: gobject-introspection-devel >= 1.36
+BuildRequires: vala-devel
+BuildRequires: vala-tools
 
 Requires: dbus
 
@@ -54,8 +57,11 @@ find %{buildroot} -name '*.la' -exec rm -f {} ';'
 
 %files
 %{_libdir}/libgssdp-1.0.so.*
+%{_libdir}/girepository-1.0/GSSDP-1.0.typelib
 
 %files devel
 %{_libdir}/libgssdp-1.0.so
 %{_libdir}/pkgconfig/gssdp-1.0.pc
 %{_includedir}/gssdp-1.0
+%{_datadir}/gir-1.0/GSSDP-1.0.gir
+%{_datadir}/vala/vapi/gssdp*
