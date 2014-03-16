@@ -27,7 +27,7 @@ test -n "$srcdir" || srcdir=.
 olddir=`pwd`
 cd "$srcdir"
 
-gtkdocize || exit 1
+#gtkdocize || exit 1
 ACLOCAL="${ACLOCAL-aclocal} $ACLOCAL_FLAGS" autoreconf -v --install || exit 1
 
 cd "$olddir"

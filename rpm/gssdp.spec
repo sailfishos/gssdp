@@ -33,23 +33,6 @@ Requires: pkgconfig
 %description devel
 Files for development with gssdp.
 
-%package utils
-Summary: Various GUI utuls for %{name}
-Group: Applications/System
-Requires: %{name} = %{version}-%{release}
-
-%description utils
-This package contains GUI utilies for %{name}.
-
-%package docs
-Summary: Documentation files for %{name}
-Group: Development/Libraries
-Requires: %{name} = %{version}-%{release}
-BuildArch: noarch
-
-%description docs
-This package contains developer documentation for %{name}.
-
 %prep
 %setup -q -n %{name}-%{version}/%{name}
 
@@ -70,21 +53,9 @@ find %{buildroot} -name '*.la' -exec rm -f {} ';'
 %postun -p /sbin/ldconfig
 
 %files
-%doc AUTHORS COPYING README NEWS
-%dir %{_datadir}/gssdp
 %{_libdir}/libgssdp-1.0.so.*
-%{_libdir}/girepository-1.0/GSSDP-1.0.typelib
 
 %files devel
 %{_libdir}/libgssdp-1.0.so
 %{_libdir}/pkgconfig/gssdp-1.0.pc
 %{_includedir}/gssdp-1.0
-%{_datadir}/gir-1.0/GSSDP-1.0.gir
-%{_datadir}/vala/vapi/gssdp*
-
-%files utils
-%{_bindir}/gssdp-device-sniffer
-%{_datadir}/gssdp/gssdp-device-sniffer.ui
-
-%files docs
-%{_datadir}/gtk-doc/html/%{name}
