@@ -1,3 +1,70 @@
+0.14.10
+=======
+
+- DOAP fixes
+- Fix SSDP when running on the same host.
+
+Bugs fixed in this release:
+ - https://bugzilla.gnome.org/show_bug.cgi?id=733851
+
+All contributors to this release:
+ - Olav Vitters <olav@vitters.nl>
+ - Jussi Kukkonen <jku@goto.fi>
+ - Jens Georg <mail@jensge.org>
+ - Andre Klapper <a9016009@gmx.de>
+
+0.14.9
+======
+
+- Properly set max age property.
+- Some gtk-doc fixes.
+- Only consider "200 OK" a proper response for SSDP requests.
+- Remove a scary warning.
+- Fix source packet filtering.
+
+Bugs fixed in this release:
+ - https://bugzilla.gnome.org/show_bug.cgi?id=697084
+ - https://bugzilla.gnome.org/show_bug.cgi?id=730946
+ - https://bugzilla.gnome.org/show_bug.cgi?id=733651
+
+All contributors to this release:
+ - Jussi Kukkonen <jku@goto.fi>
+ - Jens Georg <mail@jensge.org>
+ - Andre Moreira Magalhaes (andrunko) <andre.magalhaes@collabora.co.uk>
+
+0.14.8
+======
+
+- Recover from lost BYEBYE packets.
+- Some code clean-up.
+- Use GLib's multicast socket functions.
+- Fix compiling on mingw.
+- Don't abort if get_host_ip fails.
+- Fix an issue with unreffing GSources.
+- Fix build on some BSDs.
+- Use pktinfo on Linux to determine the source interface instead of relying on
+  netmasks.
+- Use strncpy() on interface names to not exceed ifrn_name length.
+- Documentation fixes.
+- Add support for vendor-specific headers in SSDP messages.
+
+Bugs fixed in this release:
+ - https://bugzilla.gnome.org/show_bug.cgi?id=678660
+ - https://bugzilla.gnome.org/show_bug.cgi?id=711320
+ - https://bugzilla.gnome.org/show_bug.cgi?id=724030
+ - https://bugzilla.gnome.org/show_bug.cgi?id=728871
+ - https://bugzilla.gnome.org/show_bug.cgi?id=728888
+ - https://bugzilla.gnome.org/show_bug.cgi?id=729613
+ - https://bugzilla.gnome.org/show_bug.cgi?id=730358
+
+All contributors to this release:
+ - Jens Georg <mail@jensge.org>
+ - Philip Withnall <philip.withnall@collabora.co.uk>
+ - Jens Georg <jensg@openismus.com>
+ - Riko Yamada <rik0yamada@yahoo.co.jp>
+ - Louis-Francis Ratté-Boulianne <lfrb@collabora.com>
+ - Branislav Katreniak <bkatreniak@nuvotechnologies.com>
+
 0.14.7
 ======
 

@@ -71,7 +71,7 @@ create_alive_message (const char *nt)
         else
                 usn = g_strconcat (UUID_1, "::", nt, NULL);
 
-        msg = g_strdup_printf (SSDP_ALIVE_MESSAGE,
+        msg = g_strdup_printf (SSDP_ALIVE_MESSAGE "\r\n",
                                1800,
                                "http://127.0.0.1:1234",
                                "",
@@ -93,7 +93,7 @@ create_byebye_message (const char *nt)
         else
                 usn = g_strconcat (UUID_1, "::", nt, NULL);
 
-        msg = g_strdup_printf (SSDP_BYEBYE_MESSAGE, nt, usn);
+        msg = g_strdup_printf (SSDP_BYEBYE_MESSAGE "\r\n", nt, usn);
         g_free (usn);
 
         return msg;
@@ -385,7 +385,6 @@ test_discovery_versioned (void)
         g_source_remove (timeout_id);
         timeout_id = g_timeout_add_seconds (5, quit_loop, data.loop);
         g_main_loop_run (data.loop);
-        g_source_remove (timeout_id);
 
         g_object_unref (browser);
         g_object_unref (client);

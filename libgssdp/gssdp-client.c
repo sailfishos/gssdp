@@ -66,12 +66,19 @@ typedef unsigned long in_addr_t;
 #endif
 #include <libsoup/soup-headers.h>
 
+#ifdef HAVE_SIOCGIFINDEX
+#include <sys/ioctl.h>
+#endif
+
 #include "gssdp-client.h"
 #include "gssdp-client-private.h"
 #include "gssdp-error.h"
 #include "gssdp-socket-source.h"
 #include "gssdp-marshal.h"
 #include "gssdp-protocol.h"
+#ifdef HAVE_PKTINFO
+#include "gssdp-pktinfo-message.h"
+#endif
 
 #ifndef INET6_ADDRSTRLEN
 #define INET6_ADDRSTRLEN 46
@@ -83,6 +90,9 @@ typedef unsigned long in_addr_t;
 
 /* Size of the buffer used for reading from the socket */
 #define BUF_SIZE 65536
+
+/* interface index for loopback device */
+#define LOOPBACK_IFINDEX 1
 
 static void
 gssdp_client_initable_iface_init (gpointer g_iface,
@@ -99,10 +109,18 @@ G_DEFINE_TYPE_EXTENDED (GSSDPClient,
 struct _GSSDPNetworkDevice {
         char *iface_name;
         char *host_ip;
+        GInetAddress *host_addr;
         char *network;
         struct sockaddr_in mask;
+        gint index;
 };
 typedef struct _GSSDPNetworkDevice GSSDPNetworkDevice;
+
+struct _GSSDPHeaderField {
+        char *name;
+        char *value;
+};
+typedef struct _GSSDPHeaderField GSSDPHeaderField;
 
 struct _GSSDPClientPrivate {
         char              *server_id;
@@ -110,6 +128,7 @@ struct _GSSDPClientPrivate {
         guint              socket_ttl;
         guint              msearch_port;
         GSSDPNetworkDevice device;
+        GList             *headers;
 
         GSSDPSocketSource *request_socket;
         GSSDPSocketSource *multicast_socket;
@@ -220,6 +239,7 @@ gssdp_client_initable_init (GInitable                   *initable,
                 gssdp_socket_source_new (GSSDP_SOCKET_SOURCE_TYPE_REQUEST,
                                          gssdp_client_get_host_ip (client),
                                          client->priv->socket_ttl,
+                                         client->priv->device.iface_name,
                                          &internal_error);
         if (client->priv->request_socket != NULL) {
                 gssdp_socket_source_set_callback
@@ -234,6 +254,7 @@ gssdp_client_initable_init (GInitable                   *initable,
                 gssdp_socket_source_new (GSSDP_SOCKET_SOURCE_TYPE_MULTICAST,
                                          gssdp_client_get_host_ip (client),
                                          client->priv->socket_ttl,
+                                         client->priv->device.iface_name,
                                          &internal_error);
         if (client->priv->multicast_socket != NULL) {
                 gssdp_socket_source_set_callback
@@ -254,6 +275,7 @@ gssdp_client_initable_init (GInitable                   *initable,
                                          "host-ip", gssdp_client_get_host_ip (client),
                                          "ttl", client->priv->socket_ttl,
                                          "port", client->priv->msearch_port,
+                                         "device-name", client->priv->device.iface_name,
                                          NULL));
 
         if (client->priv->search_socket != NULL) {
@@ -820,6 +842,109 @@ gssdp_client_get_active (GSSDPClient *client)
         return client->priv->active;
 }
 
+static void
+header_field_free (GSSDPHeaderField *header)
+{
+        g_free (header->name);
+        g_free (header->value);
+        g_slice_free (GSSDPHeaderField, header);
+}
+
+static gchar *
+append_header_fields (GSSDPClient *client,
+                      const gchar *message)
+{
+        GString *str;
+        GList *iter;
+
+        str = g_string_new (message);
+
+        for (iter = client->priv->headers; iter; iter = iter->next) {
+                GSSDPHeaderField *header = (GSSDPHeaderField *) iter->data;
+                g_string_append_printf (str, "%s: %s\r\n",
+                                        header->name,
+                                        header->value ? header->value : "");
+        }
+
+        g_string_append (str, "\r\n");
+
+        return g_string_free (str, FALSE);
+}
+
+/**
+ * gssdp_client_append_header:
+ * @client: A #GSSDPClient
+ * @name: Header name
+ * @value: Header value
+ *
+ * Adds a header field to the message sent by this @client. It is intended to
+ * be used by clients requiring vendor specific header fields. (If there is an
+ * existing header with name name , then this creates a second one).
+ **/
+void
+gssdp_client_append_header (GSSDPClient *client,
+                            const char  *name,
+                            const char  *value)
+{
+        GSSDPHeaderField *header;
+
+        g_return_if_fail (GSSDP_IS_CLIENT (client));
+        g_return_if_fail (name != NULL);
+
+        header = g_slice_new (GSSDPHeaderField);
+        header->name = g_strdup (name);
+        header->value = g_strdup (value);
+        client->priv->headers = g_list_append (client->priv->headers, header);
+}
+
+/**
+ * gssdp_client_remove_header:
+ * @client: A #GSSDPClient
+ * @name: Header name
+ *
+ * Removes @name from the list of headers . If there are multiple values for
+ * @name, they are all removed.
+ **/
+void
+gssdp_client_remove_header (GSSDPClient *client,
+                            const char  *name)
+{
+        GSSDPClientPrivate *priv;
+        GList *l;
+
+        g_return_if_fail (GSSDP_IS_CLIENT (client));
+        g_return_if_fail (name != NULL);
+
+        priv = client->priv;
+        l = priv->headers;
+        while (l != NULL)
+        {
+                GList *next = l->next;
+                GSSDPHeaderField *header = l->data;
+
+                if (!g_strcmp0 (header->name, name)) {
+                        header_field_free (header);
+                        priv->headers = g_list_delete_link (priv->headers, l);
+                }
+                l = next;
+        }
+}
+
+/**
+ * gssdp_client_clear_headers:
+ * @client: A #GSSDPClient
+ *
+ * Removes all the headers for this @client.
+ **/
+void
+gssdp_client_clear_headers (GSSDPClient *client)
+{
+        g_return_if_fail (GSSDP_IS_CLIENT (client));
+
+        g_list_free_full (client->priv->headers,
+                          (GDestroyNotify) header_field_free);
+}
+
 /**
  * _gssdp_client_send_message:
  * @client: A #GSSDPClient
@@ -841,6 +966,7 @@ _gssdp_client_send_message (GSSDPClient      *client,
         GInetAddress *inet_address = NULL;
         GSocketAddress *address = NULL;
         GSocket *socket;
+        char *extended_message;
 
         g_return_if_fail (GSSDP_IS_CLIENT (client));
         g_return_if_fail (message != NULL);
@@ -866,11 +992,12 @@ _gssdp_client_send_message (GSSDPClient      *client,
 
         inet_address = g_inet_address_new_from_string (dest_ip);
         address = g_inet_socket_address_new (inet_address, dest_port);
+        extended_message = append_header_fields (client, message);
 
         res = g_socket_send_to (socket,
                                 address,
-                                message,
-                                strlen (message),
+                                extended_message,
+                                strlen (extended_message),
                                 NULL,
                                 &error);
 
@@ -881,6 +1008,7 @@ _gssdp_client_send_message (GSSDPClient      *client,
                 g_error_free (error);
         }
 
+        g_free (extended_message);
         g_object_unref (address);
         g_object_unref (inet_address);
 }
@@ -981,12 +1109,9 @@ parse_http_response (char                *buf,
                                          *headers,
                                          NULL,
                                          &status_code,
-                                         NULL)) {
-                if (status_code == 200)
-                        *type = _GSSDP_DISCOVERY_RESPONSE;
-                else
-                        g_warning ("Unhandled status code '%d'", status_code);
-
+                                         NULL) &&
+            status_code == 200) {
+                *type = _GSSDP_DISCOVERY_RESPONSE;
                 return TRUE;
         } else {
                 soup_message_headers_free (*headers);
@@ -1012,18 +1137,25 @@ socket_source_cb (GSSDPSocketSource *socket_source, GSSDPClient *client)
         char *ip_string = NULL;
         guint16 port;
         GError *error = NULL;
-        in_addr_t our_addr;
-        in_addr_t mask;
-        struct sockaddr_in addr;
+        GInputVector vector;
+        GSocketControlMessage **messages;
+        gint num_messages;
+
+        vector.buffer = buf;
+        vector.size = BUF_SIZE;
 
         /* Get Socket */
         socket = gssdp_socket_source_get_socket (socket_source);
-        bytes = g_socket_receive_from (socket,
-                                       &address,
-                                       buf,
-                                       BUF_SIZE - 1,
-                                       NULL,
-                                       &error);
+        bytes = g_socket_receive_message (socket,
+                                          &address,
+                                          &vector,
+                                          1,
+                                          &messages,
+                                          &num_messages,
+                                          NULL,
+                                          NULL,
+                                          &error);
+
         if (bytes == -1) {
                 g_warning ("Failed to receive from socket: %s",
                            error->message);
@@ -1031,28 +1163,59 @@ socket_source_cb (GSSDPSocketSource *socket_source, GSSDPClient *client)
                 goto out;
         }
 
+#ifdef HAVE_PKTINFO
+        {
+                int i;
+                for (i = 0; i < num_messages; i++) {
+                        GSSDPPktinfoMessage *msg;
+                        gint msg_ifindex;
+
+                        if (!GSSDP_IS_PKTINFO_MESSAGE (messages[i]))
+                                continue;
+
+                        msg = GSSDP_PKTINFO_MESSAGE (messages[i]);
+                        msg_ifindex = gssdp_pktinfo_message_get_ifindex (msg);
+                        /* message needs to be on correct interface or on
+                         * loopback (as kernel can be smart and route things
+                         * there even if sent to another network) */
+                        if (!((msg_ifindex == client->priv->device.index ||
+                               msg_ifindex == LOOPBACK_IFINDEX) &&
+                              (g_inet_address_equal (gssdp_pktinfo_message_get_local_addr (msg),
+                                                     client->priv->device.host_addr))))
+                                goto out;
+                        else
+                                break;
+                }
+        }
+#else
         /* We need the following lines to make sure the right client received
          * the packet. We won't need to do this if there was any way to tell
          * Mr. Unix that we are only interested in receiving multicast packets
          * on this socket from a particular interface but AFAIK that is not
          * possible, at least not in a portable way.
          */
+        {
+                struct sockaddr_in addr;
+                in_addr_t mask;
+                in_addr_t our_addr;
+                if (!g_socket_address_to_native (address,
+                                                 &addr,
+                                                 sizeof (struct sockaddr_in),
+                                                 &error)) {
+                        g_warning ("Could not convert address to native: %s",
+                                   error->message);
 
-        if (!g_socket_address_to_native (address,
-                                         &addr,
-                                         sizeof (struct sockaddr_in),
-                                         &error)) {
-                g_warning ("Could not convert address to native: %s",
-                           error->message);
+                        goto out;
+                }
 
-                goto out;
+                mask = client->priv->device.mask.sin_addr.s_addr;
+                our_addr = inet_addr (gssdp_client_get_host_ip (client));
+
+                if ((addr.sin_addr.s_addr & mask) != (our_addr & mask))
+                        goto out;
+
         }
-
-        mask = client->priv->device.mask.sin_addr.s_addr;
-        our_addr = inet_addr (gssdp_client_get_host_ip (client));
-
-        if ((addr.sin_addr.s_addr & mask) != (our_addr & mask))
-                goto out;
+#endif
 
         if (bytes >= BUF_SIZE) {
                 g_warning ("Received packet of %u bytes, but the maximum "
@@ -1068,8 +1231,8 @@ socket_source_cb (GSSDPSocketSource *socket_source, GSSDPClient *client)
         /* Find length */
         end = strstr (buf, "\r\n\r\n");
         if (!end) {
-                g_warning ("Received packet lacks \"\\r\\n\\r\\n\" sequence. "
-                           "Packed dropped.");
+                g_debug ("Received packet lacks \"\\r\\n\\r\\n\" sequence. "
+                         "Packed dropped.");
 
                 goto out;
         }
@@ -1088,7 +1251,7 @@ socket_source_cb (GSSDPSocketSource *socket_source, GSSDPClient *client)
                                           len,
                                           &headers,
                                           &type)) {
-                        g_warning ("Unhandled message '%s'", buf);
+                        g_debug ("Unhandled packet '%s'", buf);
                 }
         }
         
@@ -1120,6 +1283,14 @@ out:
 
         if (address)
                 g_object_unref (address);
+
+        if (messages) {
+                int i;
+                for (i = 0; i < num_messages; i++)
+                        g_object_unref (messages[i]);
+
+                g_free (messages);
+        }
 
         return TRUE;
 }
@@ -1203,6 +1374,33 @@ extract_address_and_prefix (PIP_ADAPTER_UNICAST_ADDRESS  adapter,
         return TRUE;
 }
 #endif
+
+static int
+query_ifindex (const char *iface_name)
+{
+#ifdef HAVE_SIOCGIFINDEX
+        int fd;
+        int result;
+        struct ifreq ifr;
+
+        fd = socket (AF_INET, SOCK_STREAM, 0);
+        if (fd < 0)
+                return -1;
+
+        memset (&ifr, 0, sizeof(struct ifreq));
+        strncpy (ifr.ifr_ifrn.ifrn_name, iface_name, IFNAMSIZ);
+
+        result = ioctl (fd, SIOCGIFINDEX, (char *)&ifr);
+        close (fd);
+
+        if (result == 0)
+                return ifr.ifr_ifindex;
+        else
+                return -1;
+#else
+        return -1;
+#endif
+}
 
 /*
  * Get the host IP for the specified interface. If no interface is specified,
@@ -1510,8 +1708,8 @@ success:
         up_ifaces = NULL;
 
         if (getifaddrs (&ifa_list) != 0) {
-                g_error ("Failed to retrieve list of network interfaces:\n%s\n",
-                         strerror (errno));
+                g_warning ("Failed to retrieve list of network interfaces: %s",
+                           strerror (errno));
 
                 return FALSE;
         }
@@ -1544,6 +1742,7 @@ success:
                 const char *p, *q;
                 struct sockaddr_in *s4, *s4_mask;
                 struct in_addr net_addr;
+                const guint8 *bytes;
 
                 ifa = ifaceptr->data;
 
@@ -1557,11 +1756,18 @@ success:
                                ip,
                                sizeof (ip));
                 device->host_ip = g_strdup (p);
+
+                bytes = (const guint8 *) &s4->sin_addr;
+                device->host_addr = g_inet_address_new_from_bytes
+                                        (bytes, G_SOCKET_FAMILY_IPV4);
+
                 s4_mask = (struct sockaddr_in *) ifa->ifa_netmask;
                 memcpy (&(device->mask), s4_mask, sizeof (struct sockaddr_in));
                 net_addr.s_addr = (in_addr_t) s4->sin_addr.s_addr &
                                   (in_addr_t) s4_mask->sin_addr.s_addr;
                 q = inet_ntop (AF_INET, &net_addr, net, sizeof (net));
+
+                device->index = query_ifindex (ifa->ifa_name);
 
                 if (device->iface_name == NULL)
                         device->iface_name = g_strdup (ifa->ifa_name);
