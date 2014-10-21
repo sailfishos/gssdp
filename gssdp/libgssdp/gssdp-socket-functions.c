@@ -19,6 +19,7 @@
  * Boston, MA 02110-1301, USA.
  */
 
+#include <config.h>
 #include <errno.h>
 #include <string.h>
 
@@ -37,6 +38,7 @@
 
 #include "gssdp-error.h"
 #include "gssdp-socket-functions.h"
+#include "gssdp-pktinfo-message.h"
 
 static char*
 gssdp_socket_error_message (int error) {
@@ -89,52 +91,6 @@ gssdp_socket_option_set (GSocket    *socket,
 }
 
 gboolean
-gssdp_socket_enable_loop (GSocket *socket,
-                          gboolean _enable,
-                          GError **error) {
-#if defined(__OpenBSD__)
-        guint8 enable = (guint8) _enable;
-#else
-        gboolean enable = _enable;
-#endif
-        return gssdp_socket_option_set (socket,
-                                        IPPROTO_IP,
-                                        IP_MULTICAST_LOOP,
-                                        (char *) &enable,
-                                        sizeof (enable),
-                                        error);
-}
-
-gboolean
-gssdp_socket_set_ttl (GSocket *socket,
-                      int      _ttl,
-                      GError **error) {
-#if defined(__OpenBSD__)
-        guint8 ttl = (guint8) _ttl;
-#else
-        int ttl = _ttl;
-#endif
-        return gssdp_socket_option_set (socket,
-                                        IPPROTO_IP,
-                                        IP_MULTICAST_TTL,
-                                        (char *) &ttl,
-                                        sizeof (ttl),
-                                        error);
-}
-
-gboolean
-gssdp_socket_enable_broadcast (GSocket *socket,
-                               gboolean enable,
-                               GError **error) {
-        return gssdp_socket_option_set (socket,
-                                        SOL_SOCKET,
-                                        SO_BROADCAST,
-                                        (char *) &enable,
-                                        sizeof (enable),
-                                        error);
-}
-
-gboolean
 gssdp_socket_mcast_interface_set (GSocket      *socket,
                                   GInetAddress *iface_address,
                                   GError      **error) {
@@ -179,94 +135,27 @@ gssdp_socket_reuse_address (GSocket *socket,
         return TRUE;
 }
 
-
-/*
- * Iface may be NULL if no special interface is wanted
- */
 gboolean
-gssdp_socket_mcast_group_join (GSocket       *socket,
-                               GInetAddress  *group,
-                               GInetAddress  *iface,
-                               GError       **error) {
-        struct ip_mreq mreq;
-        GError *inner_error = NULL;
-        gboolean result;
-#ifdef G_OS_WIN32
-        GSocketAddress *local_address;
+gssdp_socket_enable_info         (GSocket *socket,
+                                  gboolean enable,
+                                  GError **error)
+{
+#ifdef HAVE_PKTINFO
+        /* Register the type so g_socket_control_message_deserialize() will
+         * find it */
+        g_object_unref (g_object_new (GSSDP_TYPE_PKTINFO_MESSAGE, NULL));
+
+        return gssdp_socket_option_set (socket,
+                                        IPPROTO_IP,
+                                        IP_PKTINFO,
+                                        (char *) &enable,
+                                        sizeof (enable),
+                                        error);
+#else
+    __GSSDP_UNUSED (socket);
+    __GSSDP_UNUSED (enable);
+    __GSSDP_UNUSED (error);
+
+    return TRUE;
 #endif
-        if (group == NULL || ! G_IS_INET_ADDRESS (group)) {
-                g_set_error_literal (error,
-                                     GSSDP_ERROR,
-                                     GSSDP_ERROR_NO_IP_ADDRESS,
-                                     "Address is not a valid address");
-
-                return FALSE;
-        }
-
-        if (!g_inet_address_get_is_multicast (group)) {
-                char *address;
-
-                address = g_inet_address_to_string (group);
-                g_set_error (error,
-                             GSSDP_ERROR,
-                             GSSDP_ERROR_FAILED,
-                             "Address '%s' is not a multicast address",
-                             address);
-                g_free (address);
-
-                return FALSE;
-        }
-
-        if (g_inet_address_get_family (group) != G_SOCKET_FAMILY_IPV4) {
-                g_set_error_literal (error,
-                                     GSSDP_ERROR,
-                                     GSSDP_ERROR_FAILED,
-                                     "IPv6 not supported");
-
-                return FALSE;
-        }
-#ifdef G_OS_WIN32
-        /* On Window, it is only possible to join multicast groups on a bound
-         * socket
-         * Note: This test is valid on Windows only. On linux, local_addres
-         * will be the ANY address (0.0.0.0 for IPv4)
-         */
-        local_address = g_socket_get_local_address (socket, &inner_error);
-        if (local_address == NULL) {
-                g_set_error_literal (error,
-                                     GSSDP_ERROR,
-                                     GSSDP_ERROR_FAILED,
-                                     "Cannot join multicast group;"
-                                     "socket is not bound");
-
-                return FALSE;
-        }
-        g_object_unref (local_address);
-#endif
-
-        memset (&mreq, 0, sizeof (struct ip_mreq));
-        memcpy (&(mreq.imr_multiaddr),
-                g_inet_address_to_bytes (group),
-                g_inet_address_get_native_size (group));
-
-        /* if omitted, join will fail if there isn't an explicit multicast
-         * route or a default route
-         */
-        if (iface != NULL)
-                memcpy (&(mreq.imr_interface),
-                        g_inet_address_to_bytes (iface),
-                        g_inet_address_get_native_size (iface));
-
-        result = gssdp_socket_option_set (socket,
-                                          IPPROTO_IP,
-                                          IP_ADD_MEMBERSHIP,
-                                          (char *) &mreq,
-                                          sizeof (mreq),
-                                          &inner_error);
-        if (!result)
-                g_propagate_error (error, inner_error);
-
-        return result;
 }
-
-

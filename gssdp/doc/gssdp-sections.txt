@@ -12,6 +12,9 @@ gssdp_client_get_host_ip
 gssdp_client_set_network
 gssdp_client_get_network
 gssdp_client_get_active
+gssdp_client_append_header
+gssdp_client_clear_headers
+gssdp_client_remove_header
 <SUBSECTION Standard>
 GSSDP_CLIENT
 GSSDP_IS_CLIENT
@@ -93,3 +96,18 @@ gssdp_error_quark
 <FILE>gssdp</FILE>
 </SECTION>
 
+<SECTION>
+<FILE>gssdp-pktinfo-message</FILE>
+<SUBSECTION Standard>
+GSSDPPktInfoMessage
+GSSDPPktinfoMessage
+GSSDPPktinfoMessageClass
+GSSDPPktinfoMessagePrivate
+GSSDP_IS_PKTINFO_MESSAGE
+GSSDP_IS_PKTINFO_MESSAGE_CLASS
+GSSDP_PKTINFO_MESAGE_CLASS
+GSSDP_PKTINFO_MESSAGE
+GSSDP_PKTINFO_MESSAGE_GET_CLASS
+GSSDP_TYPE_PKTINFO_MESSAGE
+</SUBSECTION>
+</SECTION>
