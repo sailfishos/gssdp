@@ -37,7 +37,7 @@
 /* Utility functions */
 
 static GSocket *
-create_socket()
+create_socket(void)
 {
         GSocket *socket;
         GError *error = NULL;
@@ -61,7 +61,7 @@ create_socket()
         return socket;
 }
 
-char *
+static char *
 create_alive_message (const char *nt, int max_life)
 {
         char *usn, *msg;
@@ -136,11 +136,11 @@ test_bgo673150 (void)
         GMainLoop *loop;
         gulong signal_id;
 
-        dest = gssdp_client_new (NULL, "lo", &error);
+        dest = get_client (&error);
         g_assert (dest != NULL);
         g_assert (error == NULL);
 
-        src = gssdp_client_new (NULL, "lo", &error);
+        src = get_client (&error);
         g_assert (src != NULL);
         g_assert (error == NULL);
 
@@ -211,7 +211,7 @@ resource_unavailabe_bgo682099 (GSSDPResourceBrowser *src,
         g_main_loop_quit ((GMainLoop *) user_data);
 }
 
-void test_bgo682099 (void)
+static void test_bgo682099 (void)
 {
         GSSDPClient *dest;
         GSSDPResourceBrowser *browser;
@@ -221,7 +221,7 @@ void test_bgo682099 (void)
 
         loop = g_main_loop_new (NULL, FALSE);
 
-        dest = gssdp_client_new (NULL, "lo", &error);
+        dest = get_client (&error);
         g_assert (dest != NULL);
         g_assert (error == NULL);
 
@@ -263,7 +263,7 @@ void test_bgo682099 (void)
 #define LOCATION_MISSED_BYE_BYE_1 "http://127.0.0.1:1234"
 #define LOCATION_MISSED_BYE_BYE_2 "http://127.0.0.1:1235"
 
-char *
+static char *
 create_alive_message_bgo724030 (const char *location)
 {
         char *msg;
@@ -326,7 +326,7 @@ resource_unavailabe_bgo724030 (GSSDPResourceBrowser *src,
         g_main_loop_quit ((GMainLoop *) user_data);
 }
 
-void test_bgo724030 (void)
+static void test_bgo724030 (void)
 {
         GSSDPClient *dest;
         GSSDPResourceBrowser *browser;
@@ -336,7 +336,7 @@ void test_bgo724030 (void)
 
         loop = g_main_loop_new (NULL, FALSE);
 
-        dest = gssdp_client_new (NULL, "lo", &error);
+        dest = get_client (&error);
         g_assert (dest != NULL);
         g_assert (error == NULL);
 

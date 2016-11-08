@@ -1,3 +1,127 @@
+1.0.1
+=====
+
+- Fix some compiler/c89 issues with recent mingw
+- Use proper ssize_t modifier in printf
+- Make documentation point to itself by declaring it stable
+- Use correct FSF address in documentation text
+
+All contributors to this release:
+ - Jens Georg <mail@jensge.org>
+
+1.0.0
+=====
+
+- No difference to 0.99.0
+
+0.99.0
+======
+
+- Don't leak arp lookup symbol
+- Minor documentation updates
+
+All contributors to this release:
+ - Jens Georg <mail@jensge.org>
+
+0.14.16
+=======
+
+- Fill the interface index for bionic.
+- Remove unused include.
+- Fix interface lookup on Win32
+
+Bugs fixed in this release:
+ - https://bugzilla.gnome.org/show_bug.cgi?id=762455
+ - https://bugzilla.gnome.org/show_bug.cgi?id=765688
+ - https://bugzilla.gnome.org/show_bug.cgi?id=765709
+
+All contributors to this release:
+ - Aurélien Chabot <aurelien.chabot@parrot.com>
+ - Jens Georg <mail@jensge.org>
+ - Florian Zwoch <fzwoch@gmail.com>
+
+0.14.15
+=======
+
+- Actually use the TTL that was set by the user
+- Use if_nametoindex instead of IOCTL when available
+- Implement a User Agent cache based on SSDP packages
+- Fix potential strncpy overflow
+- Add missing m4 macros
+- Disable PKTINFO on OS X
+- Do not leak host_addr in clients.
+
+Bugs fixed in this release:
+ - https://bugzilla.gnome.org/show_bug.cgi?id=653894
+ - https://bugzilla.gnome.org/show_bug.cgi?id=762324
+ - https://bugzilla.gnome.org/show_bug.cgi?id=764677
+
+All contributors to this release:
+ - Jens Georg <mail@jensge.org>
+ - Philip Withnall <philip.withnall@collabora.co.uk>
+ - Philip Withnall <philip@tecnocode.co.uk>
+
+0.14.14
+=======
+
+- Fix warning if the IP address is not known.
+- Fix issue with discovery.
+
+
+Bugs fixed in this release:
+ - https://bugzilla.gnome.org/show_bug.cgi?id=760702
+
+All contributors to this release:
+ - Jens Georg <mail@jensge.org>
+ - Philip Withnall <philip@tecnocode.co.uk>
+
+0.14.13
+=======
+
+- Make "host-ip" of GSSDPClient a construction property to give the caller the
+  chance to bypass the IP autodetection during client creation.
+
+All contributors to this release:
+ - Jens Georg <mail@jensge.org>
+
+0.14.12.1
+=========
+
+- Update m4 macros from autoconf-archive.
+
+Bugs fixed in this release:
+ - https://bugzilla.gnome.org/show_bug.cgi?id=758778
+
+All contributors to this release:
+ - Jens Georg <mail@jensge.org>
+
+0.14.12
+=======
+
+- Fix issues with names of loopback device on *BSD.
+- Move gtest code one level up and examples to their own folder.
+- Fix a possible NULL derefence in gssdp-device-sniffer.
+- Remove use of gnome-common for building.
+
+Bugs fixed in this release:
+ - https://bugzilla.gnome.org/show_bug.cgi?id=743070
+
+All contributors to this release:
+ - Jens Georg <mail@jensge.org>
+ - Thomas Klausner <tk@giga.or.at>
+
+0.14.11
+=======
+
+- Fix memory leak in GSSDPClient.
+
+Bugs fixed in this release:
+ - https://bugzilla.gnome.org/show_bug.cgi?id=737870
+
+All contributors to this release:
+ - Richard Röjfors <richard@puffinpack.se>
+ - Jens Georg <mail@jensge.org>
+
 0.14.10
 =======
 
