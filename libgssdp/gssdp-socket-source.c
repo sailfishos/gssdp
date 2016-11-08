@@ -27,19 +27,10 @@
 #include <config.h>
 #include <glib.h>
 
-#ifndef G_OS_WIN32
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <net/if.h>
-#include <ifaddrs.h>
-#endif
 #include "gssdp-socket-functions.h"
 #include "gssdp-socket-source.h"
 #include "gssdp-protocol.h"
 #include "gssdp-error.h"
-
-#include <string.h>
-#include <stdio.h>
 
 static void
 gssdp_socket_source_initable_init (gpointer g_iface,
@@ -236,7 +227,7 @@ gssdp_socket_source_do_init (GInitable                   *initable,
                 /* UDA/1.0 says 4, UDA/1.1 says 2 */
                 self->priv->ttl = 4;
 
-        g_socket_set_multicast_ttl (self->priv->socket, 4);
+        g_socket_set_multicast_ttl (self->priv->socket, self->priv->ttl);
 
 
         /* Set up additional things according to the type of socket desired */

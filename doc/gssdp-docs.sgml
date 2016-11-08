@@ -9,7 +9,7 @@
     <title>GSSDP Reference Manual</title>
 
     <releaseinfo>Version &version;
-        <ulink role="online-location" url="http://developer.gnome.org/gssdp/unstable/">http://developer.gnome.org/gssdp/unstable/</ulink>
+        <ulink role="online-location" url="http://developer.gnome.org/gssdp/stable/">http://developer.gnome.org/gssdp/stable/</ulink>
     </releaseinfo>
 
     <copyright>
@@ -38,9 +38,9 @@
         to:
 
         <address>
-          The Free Software Foundation, Inc.,
-          <street>59 Temple Place</street> - Suite 330,
-          <city>Boston</city>, <state>MA</state> <postcode>02111-1307</postcode>,
+          Free Software Foundation
+          <street>51 Franklin Street</street>, Fifth Floor
+          <city>Boston</city>, <state>MA</state> <postcode>02110-1335</postcode>,
           <country>USA</country>
         </address>
       </para>

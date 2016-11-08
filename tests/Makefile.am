@@ -1,15 +1,26 @@
-SUBDIRS = gtest
+TESTS_ENVIRONMENT = G_SLICE=debug-blocks \
+		    LD_LIBRARY_PATH=$(top_builddir)/libgssdp/.libs:$(LD_LIBRARY_PATH)
 
-AM_CFLAGS = $(LIBGSSDP_CFLAGS) -I$(top_srcdir)
+TESTS=$(check_PROGRAMS)
 
-noinst_PROGRAMS = test-browser test-publish
+check_PROGRAMS = test-regression test-functional
 
-test_browser_SOURCES = test-browser.c
-test_browser_LDADD   = $(top_builddir)/libgssdp/libgssdp-1.0.la $(LIBGSSDP_LIBS)
+noinst_LIBRARIES = libtestutil.a
 
-test_publish_SOURCES = test-publish.c
-test_publish_LDADD   = $(top_builddir)/libgssdp/libgssdp-1.0.la $(LIBGSSDP_LIBS)
+libtestutil_a_SOURCES = test-util.h test-util.c
 
-CLEANFILES = $(BUILT_SOURCES)
-DISTCLEANFILES = $(BUILT_SOURCES)
-MAINTAINERCLEANFILES = Makefile.in $(BUILT_SOURCES)
+test_regression_SOURCES = test-regression.c
+test_regression_LDFLAGS = $(WARN_LDFLAGS)
+test_functional_SOURCES = test-functional.c
+test_functional_LDFLAGS = $(WARN_LDFLAGS)
+
+LDADD = \
+	$(top_builddir)/libgssdp/libgssdp-1.0.la \
+	libtestutil.a \
+	$(LIBGSSDP_LIBS)
+
+AM_CFLAGS = \
+	    $(LIBGSSDP_CFLAGS) \
+	    -I $(top_srcdir) \
+	    -DDATA_PATH="\"$(srcdir)\"" \
+	    $(WARN_CFLAGS)
