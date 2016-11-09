@@ -1,12 +1,12 @@
 Name:          gssdp
-Version:       0.14.7
+Version:       1.0.1
 Release:       1%{?dist}
 Summary:       Resource discovery and announcement over SSDP
 
 Group:         System Environment/Libraries
 License:       LGPLv2+
 URL:           http://www.gupnp.org/
-Source0:       http://download.gnome.org/sources/%{name}/0.14/%{name}-%{version}.tar.xz
+Source0:       http://download.gnome.org/sources/%{name}/1.0/%{name}-%{version}.tar.xz
 
 BuildRequires: dbus-glib-devel
 BuildRequires: glib2-devel

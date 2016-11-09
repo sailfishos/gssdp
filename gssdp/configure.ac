@@ -1,6 +1,6 @@
 AC_PREREQ([2.64])
 AC_INIT([gssdp],
-        [0.14.11],
+        [1.0.1],
         [http://bugzilla.gnome.org/enter_bug.cgi?product=gupnp&component=gssdp],
         [gssdp],
         [http://www.gupnp.org/])
@@ -16,13 +16,18 @@ AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([1.11 tar-ustar no-dist-gzip dist-xz])
 AM_MAINTAINER_MODE([enable])
 
-GNOME_COMPILE_WARNINGS
-
 AM_SILENT_RULES([yes])
+
+#AX_REQUIRE_DEFINED([GTK_DOC_CHECK])
+AX_REQUIRE_DEFINED([GOBJECT_INTROSPECTION_CHECK])
+AX_CHECK_ENABLE_DEBUG([yes])
 
 AC_SEARCH_LIBS([strerror],[cposix])
 AC_PROG_CC
 AC_HEADER_STDC
+
+AX_IS_RELEASE([git-directory])
+AX_COMPILER_FLAGS([WARN_CFLAGS])
 
 LT_PREREQ([2.2])
 LT_INIT
@@ -68,20 +73,6 @@ AM_CONDITIONAL(USE_LIBGTK, test x$USE_LIBGTK = xyes)
 # glib-genmarshal
 GLIB_GENMARSHAL=`pkg-config --variable=glib_genmarshal glib-2.0`
 AC_SUBST(GLIB_GENMARSHAL)
-
-# Debugging
-AC_ARG_ENABLE(debug,
-	[  --enable-debug          enable debugging],,
-        enable_debug=no)
-if test "x$enable_debug" = "xyes"; then
-        CFLAGS="$CFLAGS -g -Wall"
-fi
-
-AC_ARG_ENABLE([strict-c],
-              AS_HELP_STRING([--enable-strict-c],[Error out on warnings]),,
-              [enable_strict_c=no])
-AS_IF([test "x$[]enable_strict_c" = "xyes"],
-      [CFLAGS="$CFLAGS -Werror"])
 
 GOBJECT_INTROSPECTION_CHECK([0.6.7])
 
@@ -142,6 +133,18 @@ AC_CHECK_TYPE(struct in_pktinfo,
               ], [#include <netinet/ip.h>])
 AM_CONDITIONAL([HAVE_PKTINFO], [test $HAVE_PKTINFO = yes], [])
 
+dnl Check for if_nametoindex
+AC_MSG_CHECKING([for if_nametoindex])
+AC_TRY_COMPILE([#include <net/if.h>],
+               [if_nametoindex("lo")],
+               [HAVE_IFNAMETOINDEX=yes
+                AC_DEFINE([HAVE_IFNAMETOINDEX], [1], [Whether we have if_nametoindex])
+               ],
+               [
+                HAVE_IFNAMETOINDEX=no
+               ])
+AC_MSG_RESULT([$HAVE_IFNAMETOINDEX])
+
 dnl Check for SIOCGIFINDEX
 AC_MSG_CHECKING([for SIOCGIFINDEX])
 AC_TRY_COMPILE([#include <sys/ioctl.h>],
@@ -162,7 +165,7 @@ Makefile
 libgssdp/Makefile
 tools/Makefile
 tests/Makefile
-tests/gtest/Makefile
+examples/Makefile
 vala/Makefile
 gssdp-1.0.pc
 gssdp-1.0-uninstalled.pc
