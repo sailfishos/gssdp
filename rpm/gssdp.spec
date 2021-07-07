@@ -1,23 +1,20 @@
 Name:          gssdp
-Version:       1.0.1
-Release:       1%{?dist}
+Version:       1.3.0
+Release:       1
 Summary:       Resource discovery and announcement over SSDP
 
-Group:         System Environment/Libraries
 License:       LGPLv2+
 URL:           http://www.gupnp.org/
-Source0:       http://download.gnome.org/sources/%{name}/1.0/%{name}-%{version}.tar.xz
+Source0:       %{name}-%{version}.tar.xz
 
-BuildRequires: dbus-glib-devel
-BuildRequires: glib2-devel
-BuildRequires: libsoup-devel
-BuildRequires: libxml2-devel
 BuildRequires: pkgconfig
-BuildRequires: gobject-introspection-devel >= 1.36
-BuildRequires: vala-devel
-BuildRequires: vala-tools
-
-Requires: dbus
+BuildRequires: meson
+BuildRequires: pkgconfig(glib-2.0)
+BuildRequires: pkgconfig(libsoup-2.4)
+BuildRequires: pkgconfig(libxml-2.0)
+BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.36
+BuildRequires: pkgconfig(dbus-glib-1)
+BuildRequires: pkgconfig(libvala-0.46)
 
 %description
 GSSDP implements resource discovery and announcement over SSDP and is part 
@@ -27,41 +24,34 @@ GUPnP API is intended to be easy to use, efficient and flexible.
 
 %package devel
 Summary: Development package for gssdp
-Group: Development/Libraries
 Requires: %{name} = %{version}-%{release}
-Requires: libsoup-devel
-Requires: glib2-devel
-Requires: pkgconfig
 
 %description devel
 Files for development with gssdp.
 
 %prep
-%setup -q -n %{name}-%{version}/%{name}
+%autosetup -n %{name}-%{version}/upstream
 
 %build
-autoreconf -v --install
-%configure --disable-static
-
-make %{?_smp_mflags} V=1
+%meson -Dexamples=false -Dsniffer=false
+%meson_build
 
 %install
-make install DESTDIR=%{buildroot}
 
-#Remove libtool archives.
-find %{buildroot} -name '*.la' -exec rm -f {} ';'
+%meson_install
 
 %post -p /sbin/ldconfig
 
 %postun -p /sbin/ldconfig
 
 %files
-%{_libdir}/libgssdp-1.0.so.*
-%{_libdir}/girepository-1.0/GSSDP-1.0.typelib
+%license COPYING
+%{_libdir}/libgssdp-*.so.*
+%{_libdir}/girepository-1.0/GSSDP-*.typelib
 
 %files devel
-%{_libdir}/libgssdp-1.0.so
-%{_libdir}/pkgconfig/gssdp-1.0.pc
-%{_includedir}/gssdp-1.0
-%{_datadir}/gir-1.0/GSSDP-1.0.gir
+%{_libdir}/libgssdp-*.so
+%{_libdir}/pkgconfig/gssdp-*.pc
+%{_includedir}/gssdp-*
+%{_datadir}/gir-1.0/GSSDP-*.gir
 %{_datadir}/vala/vapi/gssdp*
