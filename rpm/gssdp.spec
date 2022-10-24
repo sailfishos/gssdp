@@ -9,12 +9,12 @@ Source0:       %{name}-%{version}.tar.xz
 
 BuildRequires: pkgconfig
 BuildRequires: meson
+BuildRequires: vala
 BuildRequires: pkgconfig(glib-2.0)
 BuildRequires: pkgconfig(libsoup-2.4)
 BuildRequires: pkgconfig(libxml-2.0)
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.36
 BuildRequires: pkgconfig(dbus-glib-1)
-BuildRequires: pkgconfig(libvala-0.46)
 
 %description
 GSSDP implements resource discovery and announcement over SSDP and is part 
