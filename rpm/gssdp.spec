@@ -1,5 +1,5 @@
 Name:          gssdp
-Version:       1.3.0
+Version:       1.6.3
 Release:       1
 Summary:       Resource discovery and announcement over SSDP
 
@@ -11,7 +11,7 @@ BuildRequires: pkgconfig
 BuildRequires: meson
 BuildRequires: vala
 BuildRequires: pkgconfig(glib-2.0)
-BuildRequires: pkgconfig(libsoup-2.4)
+BuildRequires: pkgconfig(libsoup-3.0)
 BuildRequires: pkgconfig(libxml-2.0)
 BuildRequires: pkgconfig(gobject-introspection-1.0) >= 1.36
 BuildRequires: pkgconfig(dbus-glib-1)
@@ -33,7 +33,7 @@ Files for development with gssdp.
 %autosetup -n %{name}-%{version}/upstream
 
 %build
-%meson -Dexamples=false -Dsniffer=false
+%meson -Dexamples=false -Dgtk_doc=false -Dmanpages=false -Dsniffer=false
 %meson_build
 
 %install
